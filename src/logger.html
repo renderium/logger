@@ -1,0 +1,63 @@
+<div class="container {{position}}">
+  <table>
+    <tbody>
+      {{#each logs as log @name}}
+        <tr>
+          <td>{{log.name}}:</td><td>{{log.value}}</td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>
+
+<script>
+export default {
+  setup (Logger) {
+    Logger.POSITION_TOP_LEFT = 'top-left'
+    Logger.POSITION_TOP_RIGHT = 'top-right'
+    Logger.POSITION_BOTTOM_LEFT = 'bottom-left'
+    Logger.POSITION_BOTTOM_RIGHT = 'bottom-right'    
+  },
+  data () {
+    return {
+      logs: [],
+      position: this.constructor.POSITION_BOTTOM_LEFT
+    }
+  },
+  methods: {
+    log (name, value) {
+      this.logs.push({ name, value })
+    },
+    clear () {
+      this.logs = []
+    }
+  }
+}
+</script>
+
+<style>
+  .container {
+    position: absolute;
+    opacity: 0.9;
+    background-color: #020;
+    color: lime;
+    font-family: monospace;
+    font-size: 12px;
+  }
+  .top-left {
+    top: 0;
+    left: 0;
+  }
+  .top-right {
+    top: 0;
+    right: 0;
+  }
+  .bottom-left {
+    bottom: 0;
+    left: 0;
+  }
+  .bottom-right {
+    bottom: 0;
+    right: 0;
+  }
+</style>

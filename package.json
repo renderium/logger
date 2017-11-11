@@ -1,0 +1,40 @@
+{
+  "name": "renderium-logger",
+  "version": "0.1.0",
+  "description": "Renderium logger",
+  "keywords": [
+    "renderium",
+    "logger",
+    "logs"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/renderium/logger",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/renderium/logger"
+  },
+  "bugs": {
+    "url": "https://github.com/renderium/logger/issues",
+    "email": "broadsw.rd@yandex.ru"
+  },
+  "author": {
+    "name": "Vladimir Bykov",
+    "email": "broadsw.rd@yandex.ru",
+    "url": "https://github.com/broadsw0rd"
+  },
+  "main": "dist/logger.umd.js",
+  "module": "dist/logger.js",
+  "devDependencies": {
+    "rollup": "^0.51.3",
+    "rollup-plugin-buble": "^0.17.0",
+    "rollup-plugin-svelte": "^3.1.0",
+    "snazzy": "^7.0.0",
+    "standard": "^10.0.3",
+    "uglify-js": "^3.1.8"
+  },
+  "scripts": {
+    "check": "standard bin/*.js src/*.js | snazzy",
+    "build": "rollup -c",
+    "min": "uglifyjs dist/logger.umd.js -c -m > dist/logger.min.js"
+  }
+}
