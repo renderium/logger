@@ -11,25 +11,34 @@
 </div>
 
 <script>
+const POSITION_TOP_LEFT = 'top-left'
+const POSITION_TOP_RIGHT = 'top-right'
+const POSITION_BOTTOM_LEFT = 'bottom-left'
+const POSITION_BOTTOM_RIGHT = 'bottom-right'
+
 export default {
   setup (Logger) {
-    Logger.POSITION_TOP_LEFT = 'top-left'
-    Logger.POSITION_TOP_RIGHT = 'top-right'
-    Logger.POSITION_BOTTOM_LEFT = 'bottom-left'
-    Logger.POSITION_BOTTOM_RIGHT = 'bottom-right'    
+    Logger.POSITION_TOP_LEFT = POSITION_TOP_LEFT
+    Logger.POSITION_TOP_RIGHT = POSITION_TOP_RIGHT
+    Logger.POSITION_BOTTOM_LEFT = POSITION_BOTTOM_LEFT
+    Logger.POSITION_BOTTOM_RIGHT = POSITION_BOTTOM_RIGHT
   },
   data () {
     return {
       logs: [],
-      position: this.constructor.POSITION_BOTTOM_LEFT
+      position: POSITION_BOTTOM_LEFT
     }
   },
   methods: {
     log (name, value) {
-      this.logs.push({ name, value })
+      var logs = this.get('logs')
+      logs.push({ name, value })
+      this.set({ logs })
     },
     clear () {
-      this.logs = []
+      this.set({
+        logs: []
+      })
     }
   }
 }

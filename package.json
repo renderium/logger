@@ -33,7 +33,7 @@
     "uglify-js": "^3.1.8"
   },
   "scripts": {
-    "check": "standard bin/*.js src/*.js | snazzy",
+    "check": "standard src/*.js | snazzy",
     "build": "rollup -c",
     "min": "uglifyjs dist/logger.umd.js -c -m > dist/logger.min.js"
   }
