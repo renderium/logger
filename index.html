@@ -8,20 +8,6 @@
 </head>
 <body>
   <script src="dist/logger.umd.js"></script>
-  <script>
-    var logger = new Logger({
-      target: document.body
-    })
-    var start = Date.now()
-    requestAnimationFrame(function loop (t) {
-      var dt = t - start
-      var memory = performance.memory.usedJSHeapSize / 1048576
-      logger.log('dt', dt.toFixed(2))
-      logger.log('fps', Math.round(1000 / dt))
-      logger.log('memory', memory.toFixed(2))
-      start = t
-      requestAnimationFrame(loop)
-    })
-  </script>
+  <script src="static/demo.js"></script>
 </body>
 </html>

@@ -40,6 +40,14 @@ requestAnimationFrame(function loop (t) {
 
   requestAnimationFrame(loop)
 })
+
+navigator.getBattery().then(battery => {
+  logger.log('battery', `${battery.level * 100}%`)
+
+  battery.addEventListener('levelchange', () => {
+    logger.log('battery', `${battery.level * 100}%`)
+  })
+})
 ```
 
 ## API
