@@ -227,12 +227,15 @@ var methods = {
       this.logs.push(log);
     }
     this.set({ logs: this.logs });
+  },
+  clear: function clear () {
+    this.logs = [];
+    this.cache = {};
   }
 };
 
 function oncreate() {
-  this.logs = [];
-  this.cache = {};
+  this.clear();
 }
 
 function setup(Logger) {
@@ -243,13 +246,13 @@ function setup(Logger) {
 }
 
 function encapsulateStyles(node) {
-	setAttribute(node, "svelte-186475363", "");
+	setAttribute(node, "svelte-656309572", "");
 }
 
 function add_css() {
 	var style = createElement("style");
-	style.id = 'svelte-186475363-style';
-	style.textContent = "[svelte-186475363].container,[svelte-186475363] .container{position:absolute;opacity:0.9;background-color:#020;color:lime;font-family:monospace;font-size:12px}[svelte-186475363].top-left,[svelte-186475363] .top-left{top:0;left:0}[svelte-186475363].top-right,[svelte-186475363] .top-right{top:0;right:0}[svelte-186475363].bottom-left,[svelte-186475363] .bottom-left{bottom:0;left:0}[svelte-186475363].bottom-right,[svelte-186475363] .bottom-right{bottom:0;right:0}";
+	style.id = 'svelte-656309572-style';
+	style.textContent = "[svelte-656309572].container,[svelte-656309572] .container{position:absolute;opacity:0.9;background-color:#020;color:lime;font-family:monospace;font-size:12px;backface-visibility:hidden}[svelte-656309572].top-left,[svelte-656309572] .top-left{top:0;left:0}[svelte-656309572].top-right,[svelte-656309572] .top-right{top:0;right:0}[svelte-656309572].bottom-left,[svelte-656309572] .bottom-left{bottom:0;left:0}[svelte-656309572].bottom-right,[svelte-656309572] .bottom-right{bottom:0;right:0}[svelte-656309572].value,[svelte-656309572] .value{will-change:content}";
 	appendNode(style, document.head);
 }
 
@@ -343,6 +346,11 @@ function create_each_block(state, logs, log, log_index, component) {
 			text_1 = createText(":");
 			td_1 = createElement("td");
 			text_2 = createText(text_2_value);
+			this.h();
+		},
+
+		h: function hydrate() {
+			td_1.className = "value";
 		},
 
 		m: function mount(target, anchor) {
@@ -376,7 +384,7 @@ function Logger(options) {
 	init(this, options);
 	this._state = assign(data(), options.data);
 
-	if (!document.getElementById("svelte-186475363-style")) { add_css(); }
+	if (!document.getElementById("svelte-656309572-style")) { add_css(); }
 
 	var _oncreate = oncreate.bind(this);
 

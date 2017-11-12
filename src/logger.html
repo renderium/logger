@@ -3,7 +3,7 @@
     <tbody>
       {{#each logs as log}}
         <tr>
-          <td>{{log.name}}:</td><td>{{log.value}}</td>
+          <td>{{log.name}}:</td><td class="value">{{log.value}}</td>
         </tr>
       {{/each}}
     </tbody>
@@ -59,6 +59,7 @@ export default {
     color: lime;
     font-family: monospace;
     font-size: 12px;
+    backface-visibility: hidden;
   }
   .top-left {
     top: 0;
@@ -75,5 +76,8 @@ export default {
   .bottom-right {
     bottom: 0;
     right: 0;
+  }
+  .value {
+    will-change: content;
   }
 </style>
