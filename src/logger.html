@@ -1,7 +1,7 @@
 <div class="container {{position}}">
   <table>
     <tbody>
-      {{#each logs as log @name}}
+      {{#each logs as log}}
         <tr>
           <td>{{log.name}}:</td><td>{{log.value}}</td>
         </tr>
@@ -23,6 +23,9 @@ export default {
     Logger.POSITION_BOTTOM_LEFT = POSITION_BOTTOM_LEFT
     Logger.POSITION_BOTTOM_RIGHT = POSITION_BOTTOM_RIGHT
   },
+  oncreate () {
+    this.clear()
+  },
   data () {
     return {
       logs: [],
@@ -31,14 +34,18 @@ export default {
   },
   methods: {
     log (name, value) {
-      var logs = this.get('logs')
-      logs.push({ name, value })
-      this.set({ logs })
+      if (this.cache[name]) {
+        this.cache[name].value = value
+      } else {
+        var log = { name, value }
+        this.cache[name] = log
+        this.logs.push(log)
+      }
+      this.set({ logs: this.logs })
     },
     clear () {
-      this.set({
-        logs: []
-      })
+      this.logs = []
+      this.cache = {}
     }
   }
 }

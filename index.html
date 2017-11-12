@@ -19,7 +19,6 @@
     })
     var start = Date.now()
     requestAnimationFrame(function loop (t) {
-      logger.clear()
       var dt = t - start
       var memory = performance.memory.usedJSHeapSize / 1048576
       logger.log('dt', dt.toFixed(2))

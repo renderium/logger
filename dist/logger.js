@@ -27,6 +27,12 @@ function detachNode(node) {
 	node.parentNode.removeChild(node);
 }
 
+function destroyEach(iterations) {
+	for (var i = 0; i < iterations.length; i += 1) {
+		if (iterations[i]) { iterations[i].d(); }
+	}
+}
+
 function createElement(name) {
 	return document.createElement(name);
 }
@@ -207,16 +213,21 @@ function data() {
 
 var methods = {
   log: function log (name, value) {
-    var logs = this.get('logs');
-    logs.push({ name: name, value: value });
-    this.set({ logs: logs });
-  },
-  clear: function clear () {
-    this.set({
-      logs: []
-    });
+    if (this.cache[name]) {
+      this.cache[name].value = value;
+    } else {
+      var log = { name: name, value: value };
+      this.cache[name] = log;
+      this.logs.push(log);
+    }
+    this.set({ logs: this.logs });
   }
 };
+
+function oncreate() {
+  this.logs = [];
+  this.cache = {};
+}
 
 function setup(Logger) {
   Logger.POSITION_TOP_LEFT = POSITION_TOP_LEFT;
@@ -226,36 +237,25 @@ function setup(Logger) {
 }
 
 function encapsulateStyles(node) {
-	setAttribute(node, "svelte-1433555843", "");
+	setAttribute(node, "svelte-186475363", "");
 }
 
 function add_css() {
 	var style = createElement("style");
-	style.id = 'svelte-1433555843-style';
-	style.textContent = "[svelte-1433555843].container,[svelte-1433555843] .container{position:absolute;opacity:0.9;background-color:#020;color:lime;font-family:monospace;font-size:12px}[svelte-1433555843].top-left,[svelte-1433555843] .top-left{top:0;left:0}[svelte-1433555843].top-right,[svelte-1433555843] .top-right{top:0;right:0}[svelte-1433555843].bottom-left,[svelte-1433555843] .bottom-left{bottom:0;left:0}[svelte-1433555843].bottom-right,[svelte-1433555843] .bottom-right{bottom:0;right:0}";
+	style.id = 'svelte-186475363-style';
+	style.textContent = "[svelte-186475363].container,[svelte-186475363] .container{position:absolute;opacity:0.9;background-color:#020;color:lime;font-family:monospace;font-size:12px}[svelte-186475363].top-left,[svelte-186475363] .top-left{top:0;left:0}[svelte-186475363].top-right,[svelte-186475363] .top-right{top:0;right:0}[svelte-186475363].bottom-left,[svelte-186475363] .bottom-left{bottom:0;left:0}[svelte-186475363].bottom-right,[svelte-186475363] .bottom-right{bottom:0;right:0}";
 	appendNode(style, document.head);
 }
 
 function create_main_fragment(state, component) {
-	var div, div_class_value, table, tbody, each_lookup = blankObject(), each_head, each_last;
+	var div, div_class_value, table, tbody;
 
 	var logs = state.logs;
 
+	var each_blocks = [];
+
 	for (var i = 0; i < logs.length; i += 1) {
-		var key = logs[i].name;
-		var each_iteration = each_lookup[key] = create_each_block(state, logs, logs[i], i, component, key);
-
-		if (each_last) { each_last.next = each_iteration; }
-		each_iteration.last = each_last;
-		each_last = each_iteration;
-
-		if (i === 0) { each_head = each_iteration; }
-	}
-
-	function each_destroy(iteration) {
-		iteration.u();
-		iteration.d();
-		each_lookup[iteration.key] = null;
+		each_blocks[i] = create_each_block(state, logs, logs[i], i, component);
 	}
 
 	return {
@@ -264,10 +264,8 @@ function create_main_fragment(state, component) {
 			table = createElement("table");
 			tbody = createElement("tbody");
 
-			var each_iteration = each_head;
-			while (each_iteration) {
-				each_iteration.c();
-				each_iteration = each_iteration.next;
+			for (var i = 0; i < each_blocks.length; i += 1) {
+				each_blocks[i].c();
 			}
 			this.h();
 		},
@@ -282,10 +280,8 @@ function create_main_fragment(state, component) {
 			appendNode(table, div);
 			appendNode(tbody, table);
 
-			var each_iteration = each_head;
-			while (each_iteration) {
-				each_iteration.m(tbody, null);
-				each_iteration = each_iteration.next;
+			for (var i = 0; i < each_blocks.length; i += 1) {
+				each_blocks[i].m(tbody, null);
 			}
 		},
 
@@ -296,102 +292,44 @@ function create_main_fragment(state, component) {
 
 			var logs = state.logs;
 
-			var each_expected = each_head;
-			var each_last = null;
-
-			var discard_pile = [];
-
-			for (i = 0; i < logs.length; i += 1) {
-				var key = logs[i].name;
-				var each_iteration = each_lookup[key];
-
-				if (each_iteration) { each_iteration.p(changed, state, logs, logs[i], i); }
-
-				if (each_expected) {
-					if (key === each_expected.key) {
-						each_expected = each_expected.next;
+			if (changed.logs) {
+				for (var i = 0; i < logs.length; i += 1) {
+					if (each_blocks[i]) {
+						each_blocks[i].p(changed, state, logs, logs[i], i);
 					} else {
-						if (each_iteration) {
-							// probably a deletion
-							while (each_expected && each_expected.key !== key) {
-								each_expected.discard = true;
-								discard_pile.push(each_expected);
-								each_expected = each_expected.next;
-							}
-
-							each_expected = each_expected && each_expected.next;
-							each_iteration.discard = false;
-							each_iteration.last = each_last;
-
-							if (!each_expected) { each_iteration.m(tbody, null); }
-						} else {
-							// key is being inserted
-							each_iteration = each_lookup[key] = create_each_block(state, logs, logs[i], i, component, key);
-							each_iteration.c();
-							each_iteration.m(tbody, each_expected.first);
-
-							each_expected.last = each_iteration;
-							each_iteration.next = each_expected;
-						}
-					}
-				} else {
-					// we're appending from this point forward
-					if (each_iteration) {
-						each_iteration.discard = false;
-						each_iteration.next = null;
-						each_iteration.m(tbody, null);
-					} else {
-						each_iteration = each_lookup[key] = create_each_block(state, logs, logs[i], i, component, key);
-						each_iteration.c();
-						each_iteration.m(tbody, null);
+						each_blocks[i] = create_each_block(state, logs, logs[i], i, component);
+						each_blocks[i].c();
+						each_blocks[i].m(tbody, null);
 					}
 				}
 
-				if (each_last) { each_last.next = each_iteration; }
-				each_iteration.last = each_last;
-				each_last = each_iteration;
-			}
-
-			if (each_last) { each_last.next = null; }
-
-			while (each_expected) {
-				each_destroy(each_expected);
-				each_expected = each_expected.next;
-			}
-
-			for (i = 0; i < discard_pile.length; i += 1) {
-				var each_iteration = discard_pile[i];
-				if (each_iteration.discard) {
-					each_destroy(each_iteration);
+				for (; i < each_blocks.length; i += 1) {
+					each_blocks[i].u();
+					each_blocks[i].d();
 				}
+				each_blocks.length = logs.length;
 			}
-
-			each_head = each_lookup[logs[0] && logs[0].name];
 		},
 
 		u: function unmount() {
 			detachNode(div);
+
+			for (var i = 0; i < each_blocks.length; i += 1) {
+				each_blocks[i].u();
+			}
 		},
 
 		d: function destroy$$1() {
-			var each_iteration = each_head;
-			while (each_iteration) {
-				each_iteration.d();
-				each_iteration = each_iteration.next;
-			}
+			destroyEach(each_blocks);
 		}
 	};
 }
 
-// (4:6) {{#each logs as log @name}}
-function create_each_block(state, logs, log, log_index, component, key) {
+// (4:6) {{#each logs as log}}
+function create_each_block(state, logs, log, log_index, component) {
 	var tr, td, text_value = log.name, text, text_1, td_1, text_2_value = log.value, text_2;
 
 	return {
-		key: key,
-
-		first: null,
-
 		c: function create() {
 			tr = createElement("tr");
 			td = createElement("td");
@@ -399,11 +337,6 @@ function create_each_block(state, logs, log, log_index, component, key) {
 			text_1 = createText(":");
 			td_1 = createElement("td");
 			text_2 = createText(text_2_value);
-			this.h();
-		},
-
-		h: function hydrate() {
-			this.first = tr;
 		},
 
 		m: function mount(target, anchor) {
@@ -437,13 +370,23 @@ function Logger(options) {
 	init(this, options);
 	this._state = assign(data(), options.data);
 
-	if (!document.getElementById("svelte-1433555843-style")) { add_css(); }
+	if (!document.getElementById("svelte-186475363-style")) { add_css(); }
+
+	var _oncreate = oncreate.bind(this);
+
+	if (!options._root) {
+		this._oncreate = [_oncreate];
+	} else {
+	 	this._root._oncreate.push(_oncreate);
+	 }
 
 	this._fragment = create_main_fragment(this._state, this);
 
 	if (options.target) {
 		this._fragment.c();
 		this._fragment.m(options.target, options.anchor || null);
+
+		callAll(this._oncreate);
 	}
 }
 
