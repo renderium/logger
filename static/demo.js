@@ -5,7 +5,7 @@ var logger = new Logger({
 var start = Date.now()
 requestAnimationFrame(function loop (t) {
   var dt = t - start
-  var memory = performance.memory.usedJSHeapSize / 1048576
+  var memory = performance.memory ? performance.memory.usedJSHeapSize / 1048576 : 0
   start = t
 
   logger.log('dt', dt.toFixed(2))
