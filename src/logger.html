@@ -1,15 +1,3 @@
-<div class="container {{position}}">
-  <table>
-    <tbody>
-      {{#each logs as log}}
-        <tr>
-          <td>{{log.name}}:</td><td class="value">{{log.value}}</td>
-        </tr>
-      {{/each}}
-    </tbody>
-  </table>
-</div>
-
 <script>
 const POSITION_TOP_LEFT = 'top-left'
 const POSITION_TOP_RIGHT = 'top-right'
@@ -23,33 +11,50 @@ export default {
     Logger.POSITION_BOTTOM_LEFT = POSITION_BOTTOM_LEFT
     Logger.POSITION_BOTTOM_RIGHT = POSITION_BOTTOM_RIGHT
   },
-  oncreate () {
-    this.clear()
-  },
+
   data () {
     return {
       logs: [],
       position: POSITION_BOTTOM_LEFT
     }
   },
+
+  oncreate () {
+    this.clear()
+  },
+
   methods: {
+    clear () {
+      this.logs = []
+      this.cache = {}
+    },
+
     log (name, value) {
-      if (this.cache[name]) {
-        this.cache[name].value = value
+      var log
+      if (log = this.cache[name]) {
+        log.value = value
       } else {
-        var log = { name, value }
+        log = { name, value }
         this.cache[name] = log
         this.logs.push(log)
       }
       this.set({ logs: this.logs })
-    },
-    clear () {
-      this.logs = []
-      this.cache = {}
     }
   }
 }
 </script>
+
+<div class="container {{position}}">
+  <table>
+    <tbody>
+      {{#each logs as log}}
+        <tr>
+          <td>{{log.name}}:</td><td class="value">{{log.value}}</td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>
 
 <style>
   .container {
