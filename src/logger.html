@@ -44,14 +44,14 @@ export default {
 }
 </script>
 
-<div class="container {{position}}">
+<div class="container {position}">
   <table>
     <tbody>
-      {{#each logs as log}}
+      {#each logs as log}
         <tr>
-          <td>{{log.name}}:</td><td class="value">{{log.value}}</td>
+          <td>{log.name}:</td><td class="value">{log.value}</td>
         </tr>
-      {{/each}}
+      {/each}
     </tbody>
   </table>
 </div>

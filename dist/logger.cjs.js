@@ -1,3 +1,5 @@
+'use strict';
+
 function noop() {}
 
 function assign(tar, src) {
@@ -354,4 +356,4 @@ assign(Logger.prototype, methods);
 
 setup(Logger);
 
-export default Logger;
+module.exports = Logger;

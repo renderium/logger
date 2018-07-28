@@ -5,7 +5,8 @@ import buble from 'rollup-plugin-buble'
 export default {
   input: 'src/logger.html',
   output: [
-    { file: pkg.main, format: 'umd', name: 'Logger' },
+    { file: pkg.umd, format: 'umd', name: 'Logger' },
+    { file: pkg.main, format: 'cjs' },
     { file: pkg.module, format: 'es' }
   ],
   plugins: [

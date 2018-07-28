@@ -4,412 +4,362 @@
 	(global.Logger = factory());
 }(this, (function () { 'use strict';
 
-function noop() {}
+	function noop() {}
 
-function assign(target) {
-	var arguments$1 = arguments;
-
-	var k,
-		source,
-		i = 1,
-		len = arguments.length;
-	for (; i < len; i++) {
-		source = arguments$1[i];
-		for (k in source) { target[k] = source[k]; }
+	function assign(tar, src) {
+		for (var k in src) { tar[k] = src[k]; }
+		return tar;
 	}
 
-	return target;
-}
-
-function appendNode(node, target) {
-	target.appendChild(node);
-}
-
-function insertNode(node, target, anchor) {
-	target.insertBefore(node, anchor);
-}
-
-function detachNode(node) {
-	node.parentNode.removeChild(node);
-}
-
-function destroyEach(iterations) {
-	for (var i = 0; i < iterations.length; i += 1) {
-		if (iterations[i]) { iterations[i].d(); }
+	function assignTrue(tar, src) {
+		for (var k in src) { tar[k] = 1; }
+		return tar;
 	}
-}
 
-function createElement(name) {
-	return document.createElement(name);
-}
+	function appendNode(node, target) {
+		target.appendChild(node);
+	}
 
-function createText(data) {
-	return document.createTextNode(data);
-}
+	function insertNode(node, target, anchor) {
+		target.insertBefore(node, anchor);
+	}
 
-function setAttribute(node, attribute, value) {
-	node.setAttribute(attribute, value);
-}
+	function detachNode(node) {
+		node.parentNode.removeChild(node);
+	}
 
-function blankObject() {
-	return Object.create(null);
-}
-
-function destroy(detach) {
-	this.destroy = noop;
-	this.fire('destroy');
-	this.set = this.get = noop;
-
-	if (detach !== false) { this._fragment.u(); }
-	this._fragment.d();
-	this._fragment = this._state = null;
-}
-
-function differs(a, b) {
-	return a !== b || ((a && typeof a === 'object') || typeof a === 'function');
-}
-
-function dispatchObservers(component, group, changed, newState, oldState) {
-	for (var key in group) {
-		if (!changed[key]) { continue; }
-
-		var newValue = newState[key];
-		var oldValue = oldState[key];
-
-		var callbacks = group[key];
-		if (!callbacks) { continue; }
-
-		for (var i = 0; i < callbacks.length; i += 1) {
-			var callback = callbacks[i];
-			if (callback.__calling) { continue; }
-
-			callback.__calling = true;
-			callback.call(component, newValue, oldValue);
-			callback.__calling = false;
+	function destroyEach(iterations, detach) {
+		for (var i = 0; i < iterations.length; i += 1) {
+			if (iterations[i]) { iterations[i].d(detach); }
 		}
 	}
-}
 
-function fire(eventName, data) {
-	var this$1 = this;
-
-	var handlers =
-		eventName in this._handlers && this._handlers[eventName].slice();
-	if (!handlers) { return; }
-
-	for (var i = 0; i < handlers.length; i += 1) {
-		handlers[i].call(this$1, data);
-	}
-}
-
-function get(key) {
-	return key ? this._state[key] : this._state;
-}
-
-function init(component, options) {
-	component.options = options;
-
-	component._observers = { pre: blankObject(), post: blankObject() };
-	component._handlers = blankObject();
-	component._root = options._root || component;
-	component._bind = options._bind;
-}
-
-function observe(key, callback, options) {
-	var group = options && options.defer
-		? this._observers.post
-		: this._observers.pre;
-
-	(group[key] || (group[key] = [])).push(callback);
-
-	if (!options || options.init !== false) {
-		callback.__calling = true;
-		callback.call(this, this._state[key]);
-		callback.__calling = false;
+	function createElement(name) {
+		return document.createElement(name);
 	}
 
-	return {
-		cancel: function() {
-			var index = group[key].indexOf(callback);
-			if (~index) { group[key].splice(index, 1); }
+	function createText(data) {
+		return document.createTextNode(data);
+	}
+
+	function blankObject() {
+		return Object.create(null);
+	}
+
+	function destroy(detach) {
+		this.destroy = noop;
+		this.fire('destroy');
+		this.set = noop;
+
+		this._fragment.d(detach !== false);
+		this._fragment = null;
+		this._state = {};
+	}
+
+	function _differs(a, b) {
+		return a != a ? b == b : a !== b || ((a && typeof a === 'object') || typeof a === 'function');
+	}
+
+	function fire(eventName, data) {
+		var this$1 = this;
+
+		var handlers =
+			eventName in this._handlers && this._handlers[eventName].slice();
+		if (!handlers) { return; }
+
+		for (var i = 0; i < handlers.length; i += 1) {
+			var handler = handlers[i];
+
+			if (!handler.__calling) {
+				try {
+					handler.__calling = true;
+					handler.call(this$1, data);
+				} finally {
+					handler.__calling = false;
+				}
+			}
 		}
+	}
+
+	function get() {
+		return this._state;
+	}
+
+	function init(component, options) {
+		component._handlers = blankObject();
+		component._bind = options._bind;
+
+		component.options = options;
+		component.root = options.root || component;
+		component.store = options.store || component.root.store;
+	}
+
+	function on(eventName, handler) {
+		var handlers = this._handlers[eventName] || (this._handlers[eventName] = []);
+		handlers.push(handler);
+
+		return {
+			cancel: function() {
+				var index = handlers.indexOf(handler);
+				if (~index) { handlers.splice(index, 1); }
+			}
+		};
+	}
+
+	function set(newState) {
+		this._set(assign({}, newState));
+		if (this.root._lock) { return; }
+		this.root._lock = true;
+		callAll(this.root._beforecreate);
+		callAll(this.root._oncreate);
+		callAll(this.root._aftercreate);
+		this.root._lock = false;
+	}
+
+	function _set(newState) {
+		var this$1 = this;
+
+		var oldState = this._state,
+			changed = {},
+			dirty = false;
+
+		for (var key in newState) {
+			if (this$1._differs(newState[key], oldState[key])) { changed[key] = dirty = true; }
+		}
+		if (!dirty) { return; }
+
+		this._state = assign(assign({}, oldState), newState);
+		this._recompute(changed, this._state);
+		if (this._bind) { this._bind(changed, this._state); }
+
+		if (this._fragment) {
+			this.fire("state", { changed: changed, current: this._state, previous: oldState });
+			this._fragment.p(changed, this._state);
+			this.fire("update", { changed: changed, current: this._state, previous: oldState });
+		}
+	}
+
+	function callAll(fns) {
+		while (fns && fns.length) { fns.shift()(); }
+	}
+
+	function _mount(target, anchor) {
+		this._fragment[this._fragment.i ? 'i' : 'm'](target, anchor || null);
+	}
+
+	var proto = {
+		destroy: destroy,
+		get: get,
+		fire: fire,
+		on: on,
+		set: set,
+		_recompute: noop,
+		_set: _set,
+		_mount: _mount,
+		_differs: _differs
 	};
-}
 
-function on(eventName, handler) {
-	if (eventName === 'teardown') { return this.on('destroy', handler); }
+	/* src\logger.html generated by Svelte v2.9.7 */
 
-	var handlers = this._handlers[eventName] || (this._handlers[eventName] = []);
-	handlers.push(handler);
+	var POSITION_TOP_LEFT = 'top-left';
+	var POSITION_TOP_RIGHT = 'top-right';
+	var POSITION_BOTTOM_LEFT = 'bottom-left';
+	var POSITION_BOTTOM_RIGHT = 'bottom-right';
 
-	return {
-		cancel: function() {
-			var index = handlers.indexOf(handler);
-			if (~index) { handlers.splice(index, 1); }
-		}
+	function data() {
+	  return {
+	    logs: [],
+	    position: POSITION_BOTTOM_LEFT
+	  }
+	}
+	var methods = {
+	  clear: function clear () {
+	    this.logs = [];
+	    this.cache = {};
+	  },
+
+	  log: function log (name, value) {
+	    var log;
+	    if (log = this.cache[name]) {
+	      log.value = value;
+	    } else {
+	      log = { name: name, value: value };
+	      this.cache[name] = log;
+	      this.logs.push(log);
+	    }
+	    this.set({ logs: this.logs });
+	  }
 	};
-}
 
-function set(newState) {
-	this._set(assign({}, newState));
-	if (this._root._lock) { return; }
-	this._root._lock = true;
-	callAll(this._root._beforecreate);
-	callAll(this._root._oncreate);
-	callAll(this._root._aftercreate);
-	this._root._lock = false;
-}
-
-function _set(newState) {
-	var oldState = this._state,
-		changed = {},
-		dirty = false;
-
-	for (var key in newState) {
-		if (differs(newState[key], oldState[key])) { changed[key] = dirty = true; }
+	function oncreate() {
+	  this.clear();
 	}
-	if (!dirty) { return; }
-
-	this._state = assign({}, oldState, newState);
-	this._recompute(changed, this._state);
-	if (this._bind) { this._bind(changed, this._state); }
-	dispatchObservers(this, this._observers.pre, changed, this._state, oldState);
-	this._fragment.p(changed, this._state);
-	dispatchObservers(this, this._observers.post, changed, this._state, oldState);
-}
-
-function callAll(fns) {
-	while (fns && fns.length) { fns.pop()(); }
-}
-
-function _mount(target, anchor) {
-	this._fragment.m(target, anchor);
-}
-
-function _unmount() {
-	this._fragment.u();
-}
-
-var proto = {
-	destroy: destroy,
-	get: get,
-	fire: fire,
-	observe: observe,
-	on: on,
-	set: set,
-	teardown: destroy,
-	_recompute: noop,
-	_set: _set,
-	_mount: _mount,
-	_unmount: _unmount
-};
-
-/* src\logger.html generated by Svelte v1.41.2 */
-var POSITION_TOP_LEFT = 'top-left';
-var POSITION_TOP_RIGHT = 'top-right';
-var POSITION_BOTTOM_LEFT = 'bottom-left';
-var POSITION_BOTTOM_RIGHT = 'bottom-right';
-
-function data() {
-  return {
-    logs: [],
-    position: POSITION_BOTTOM_LEFT
-  }
-}
-
-var methods = {
-  clear: function clear () {
-    this.logs = [];
-    this.cache = {};
-  },
-
-  log: function log (name, value) {
-    var log;
-    if (log = this.cache[name]) {
-      log.value = value;
-    } else {
-      log = { name: name, value: value };
-      this.cache[name] = log;
-      this.logs.push(log);
-    }
-    this.set({ logs: this.logs });
-  }
-};
-
-function oncreate() {
-  this.clear();
-}
-
-function setup(Logger) {
-  Logger.POSITION_TOP_LEFT = POSITION_TOP_LEFT;
-  Logger.POSITION_TOP_RIGHT = POSITION_TOP_RIGHT;
-  Logger.POSITION_BOTTOM_LEFT = POSITION_BOTTOM_LEFT;
-  Logger.POSITION_BOTTOM_RIGHT = POSITION_BOTTOM_RIGHT;
-}
-
-function encapsulateStyles(node) {
-	setAttribute(node, "svelte-2063022765", "");
-}
-
-function add_css() {
-	var style = createElement("style");
-	style.id = 'svelte-2063022765-style';
-	style.textContent = "[svelte-2063022765].container,[svelte-2063022765] .container{position:absolute;opacity:0.9;background-color:#020;color:lime;font-family:monospace;font-size:12px;backface-visibility:hidden}[svelte-2063022765].top-left,[svelte-2063022765] .top-left{top:0;left:0}[svelte-2063022765].top-right,[svelte-2063022765] .top-right{top:0;right:0}[svelte-2063022765].bottom-left,[svelte-2063022765] .bottom-left{bottom:0;left:0}[svelte-2063022765].bottom-right,[svelte-2063022765] .bottom-right{bottom:0;right:0}[svelte-2063022765].value,[svelte-2063022765] .value{will-change:content}";
-	appendNode(style, document.head);
-}
-
-function create_main_fragment(state, component) {
-	var div, div_class_value, table, tbody;
-
-	var logs = state.logs;
-
-	var each_blocks = [];
-
-	for (var i = 0; i < logs.length; i += 1) {
-		each_blocks[i] = create_each_block(state, logs, logs[i], i, component);
+	function setup(Logger) {
+	  Logger.POSITION_TOP_LEFT = POSITION_TOP_LEFT;
+	  Logger.POSITION_TOP_RIGHT = POSITION_TOP_RIGHT;
+	  Logger.POSITION_BOTTOM_LEFT = POSITION_BOTTOM_LEFT;
+	  Logger.POSITION_BOTTOM_RIGHT = POSITION_BOTTOM_RIGHT;
+	}
+	function add_css() {
+		var style = createElement("style");
+		style.id = 'svelte-190ghym-style';
+		style.textContent = ".container.svelte-190ghym{position:absolute;opacity:0.9;background-color:#020;color:lime;font-family:monospace;font-size:12px;backface-visibility:hidden}.top-left.svelte-190ghym{top:0;left:0}.top-right.svelte-190ghym{top:0;right:0}.bottom-left.svelte-190ghym{bottom:0;left:0}.bottom-right.svelte-190ghym{bottom:0;right:0}.value.svelte-190ghym{will-change:content}";
+		appendNode(style, document.head);
 	}
 
-	return {
-		c: function create() {
-			div = createElement("div");
-			table = createElement("table");
-			tbody = createElement("tbody");
+	function create_main_fragment(component, ctx) {
+		var div, table, tbody, div_class_value;
 
-			for (var i = 0; i < each_blocks.length; i += 1) {
-				each_blocks[i].c();
-			}
-			this.h();
-		},
+		var each_value = ctx.logs;
 
-		h: function hydrate() {
-			encapsulateStyles(div);
-			div.className = div_class_value = "container " + state.position;
-		},
+		var each_blocks = [];
 
-		m: function mount(target, anchor) {
-			insertNode(div, target, anchor);
-			appendNode(table, div);
-			appendNode(tbody, table);
+		for (var i = 0; i < each_value.length; i += 1) {
+			each_blocks[i] = create_each_block(component, get_each_context(ctx, each_value, i));
+		}
 
-			for (var i = 0; i < each_blocks.length; i += 1) {
-				each_blocks[i].m(tbody, null);
-			}
-		},
+		return {
+			c: function c() {
+				div = createElement("div");
+				table = createElement("table");
+				tbody = createElement("tbody");
 
-		p: function update(changed, state) {
-			if ((changed.position) && div_class_value !== (div_class_value = "container " + state.position)) {
-				div.className = div_class_value;
-			}
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].c();
+				}
+				div.className = div_class_value = "container " + ctx.position + " svelte-190ghym";
+			},
 
-			var logs = state.logs;
+			m: function m(target, anchor) {
+				insertNode(div, target, anchor);
+				appendNode(table, div);
+				appendNode(tbody, table);
 
-			if (changed.logs) {
-				for (var i = 0; i < logs.length; i += 1) {
-					if (each_blocks[i]) {
-						each_blocks[i].p(changed, state, logs, logs[i], i);
-					} else {
-						each_blocks[i] = create_each_block(state, logs, logs[i], i, component);
-						each_blocks[i].c();
-						each_blocks[i].m(tbody, null);
+				for (var i = 0; i < each_blocks.length; i += 1) {
+					each_blocks[i].m(tbody, null);
+				}
+			},
+
+			p: function p(changed, ctx) {
+				if (changed.logs) {
+					each_value = ctx.logs;
+
+					for (var i = 0; i < each_value.length; i += 1) {
+						var child_ctx = get_each_context(ctx, each_value, i);
+
+						if (each_blocks[i]) {
+							each_blocks[i].p(changed, child_ctx);
+						} else {
+							each_blocks[i] = create_each_block(component, child_ctx);
+							each_blocks[i].c();
+							each_blocks[i].m(tbody, null);
+						}
 					}
+
+					for (; i < each_blocks.length; i += 1) {
+						each_blocks[i].d(1);
+					}
+					each_blocks.length = each_value.length;
 				}
 
-				for (; i < each_blocks.length; i += 1) {
-					each_blocks[i].u();
-					each_blocks[i].d();
+				if ((changed.position) && div_class_value !== (div_class_value = "container " + ctx.position + " svelte-190ghym")) {
+					div.className = div_class_value;
 				}
-				each_blocks.length = logs.length;
+			},
+
+			d: function d(detach) {
+				if (detach) {
+					detachNode(div);
+				}
+
+				destroyEach(each_blocks, detach);
 			}
-		},
-
-		u: function unmount() {
-			detachNode(div);
-
-			for (var i = 0; i < each_blocks.length; i += 1) {
-				each_blocks[i].u();
-			}
-		},
-
-		d: function destroy$$1() {
-			destroyEach(each_blocks);
-		}
-	};
-}
-
-// (50:6) {{#each logs as log}}
-function create_each_block(state, logs, log, log_index, component) {
-	var tr, td, text_value = log.name, text, text_1, td_1, text_2_value = log.value, text_2;
-
-	return {
-		c: function create() {
-			tr = createElement("tr");
-			td = createElement("td");
-			text = createText(text_value);
-			text_1 = createText(":");
-			td_1 = createElement("td");
-			text_2 = createText(text_2_value);
-			this.h();
-		},
-
-		h: function hydrate() {
-			td_1.className = "value";
-		},
-
-		m: function mount(target, anchor) {
-			insertNode(tr, target, anchor);
-			appendNode(td, tr);
-			appendNode(text, td);
-			appendNode(text_1, td);
-			appendNode(td_1, tr);
-			appendNode(text_2, td_1);
-		},
-
-		p: function update(changed, state, logs, log, log_index) {
-			if ((changed.logs) && text_value !== (text_value = log.name)) {
-				text.data = text_value;
-			}
-
-			if ((changed.logs) && text_2_value !== (text_2_value = log.value)) {
-				text_2.data = text_2_value;
-			}
-		},
-
-		u: function unmount() {
-			detachNode(tr);
-		},
-
-		d: noop
-	};
-}
-
-function Logger(options) {
-	init(this, options);
-	this._state = assign(data(), options.data);
-
-	if (!document.getElementById("svelte-2063022765-style")) { add_css(); }
-
-	var _oncreate = oncreate.bind(this);
-
-	if (!options._root) {
-		this._oncreate = [_oncreate];
-	} else {
-	 	this._root._oncreate.push(_oncreate);
-	 }
-
-	this._fragment = create_main_fragment(this._state, this);
-
-	if (options.target) {
-		this._fragment.c();
-		this._fragment.m(options.target, options.anchor || null);
-
-		callAll(this._oncreate);
+		};
 	}
-}
 
-assign(Logger.prototype, methods, proto);
+	// (50:6) {#each logs as log}
+	function create_each_block(component, ctx) {
+		var tr, td, text_value = ctx.log.name, text, text_1, td_1, text_2_value = ctx.log.value, text_2;
 
-setup(Logger);
+		return {
+			c: function c() {
+				tr = createElement("tr");
+				td = createElement("td");
+				text = createText(text_value);
+				text_1 = createText(":");
+				td_1 = createElement("td");
+				text_2 = createText(text_2_value);
+				td_1.className = "value svelte-190ghym";
+			},
 
-return Logger;
+			m: function m(target, anchor) {
+				insertNode(tr, target, anchor);
+				appendNode(td, tr);
+				appendNode(text, td);
+				appendNode(text_1, td);
+				appendNode(td_1, tr);
+				appendNode(text_2, td_1);
+			},
+
+			p: function p(changed, ctx) {
+				if ((changed.logs) && text_value !== (text_value = ctx.log.name)) {
+					text.data = text_value;
+				}
+
+				if ((changed.logs) && text_2_value !== (text_2_value = ctx.log.value)) {
+					text_2.data = text_2_value;
+				}
+			},
+
+			d: function d(detach) {
+				if (detach) {
+					detachNode(tr);
+				}
+			}
+		};
+	}
+
+	function get_each_context(ctx, list, i) {
+		var child_ctx = Object.create(ctx);
+		child_ctx.log = list[i];
+		child_ctx.each_value = list;
+		child_ctx.log_index = i;
+		return child_ctx;
+	}
+
+	function Logger(options) {
+		var this$1 = this;
+
+		init(this, options);
+		this._state = assign(data(), options.data);
+		this._intro = true;
+
+		if (!document.getElementById("svelte-190ghym-style")) { add_css(); }
+
+		if (!options.root) {
+			this._oncreate = [];
+		}
+
+		this._fragment = create_main_fragment(this, this._state);
+
+		this.root._oncreate.push(function () {
+			oncreate.call(this$1);
+			this$1.fire("update", { changed: assignTrue({}, this$1._state), current: this$1._state });
+		});
+
+		if (options.target) {
+			this._fragment.c();
+			this._mount(options.target, options.anchor);
+
+			callAll(this._oncreate);
+		}
+	}
+
+	assign(Logger.prototype, proto);
+	assign(Logger.prototype, methods);
+
+	setup(Logger);
+
+	return Logger;
 
 })));
