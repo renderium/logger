@@ -13,7 +13,6 @@
 - [Features](#features)
 - [Install](#install)
 - [Usage](#usage)
-- [API](#api)
 - [Development](#development)
 
 ## Features
@@ -58,8 +57,6 @@ navigator.getBattery().then(battery => {
   })
 })
 ```
-
-## API
 
 ## Development
 
