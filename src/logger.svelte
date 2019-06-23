@@ -24,6 +24,7 @@
       cache[name] = log
       logs = logs.concat(log)
     }
+    return this
   }
 </script>
 

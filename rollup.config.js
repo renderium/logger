@@ -5,7 +5,7 @@ import svelte from 'rollup-plugin-svelte'
 import buble from 'rollup-plugin-buble'
 
 export default {
-  input: 'src/index.svelte',
+  input: 'src/logger.svelte',
   output: [
     { file: pkg.umd, format: 'umd', name: 'Logger' },
     { file: pkg.main, format: 'cjs' },
