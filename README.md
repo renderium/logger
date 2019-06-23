@@ -18,7 +18,7 @@
 ## Features
 
 - Designed with performance in mind
-- Simple - [70 LOC](https://github.com/renderium/logger/blob/master/src/index.svelte#L88)
+- Simple - [70 LOC](https://github.com/renderium/logger/blob/master/src/logger.svelte#L88)
 - Lightweight - [6 Kb](https://github.com/renderium/logger/blob/master/dist/logger.min.js)
 
 ## Install
